@@ -22,7 +22,7 @@ PmergeMe::~PmergeMe() {
 void	PmergeMe::printBeforeSort() {
 	std::cout << "Before sort:" << std::endl;
 	std::cout << "list: ";
-	for (std::list<size_t>::iterator it = _liContainer.begin(); it != _liContainer.end(); it++) {
+	for (std::deque<size_t>::iterator it = _liContainer.begin(); it != _liContainer.end(); it++) {
 		std::cout << *it << " ";
 	}
 	std::cout << std::endl;
@@ -53,10 +53,10 @@ void	PmergeMe::fillContainer(char *sequence[]) {
 	}
 }
 
-void	PmergeMe::merge(std::list<std::pair<size_t, size_t> > & lst, int left, int mid, int right)  {
-	std::list<std::pair<size_t, size_t> >::iterator itI = lst.begin();
-	std::list<std::pair<size_t, size_t> >::iterator itJ = lst.begin();
-	std::list<std::pair<size_t, size_t> >::iterator itChange = lst.begin();
+void	PmergeMe::merge(std::deque<std::pair<size_t, size_t> > & lst, int left, int mid, int right)  {
+	std::deque<std::pair<size_t, size_t> >::iterator itI = lst.begin();
+	std::deque<std::pair<size_t, size_t> >::iterator itJ = lst.begin();
+	std::deque<std::pair<size_t, size_t> >::iterator itChange = lst.begin();
 	std::vector<int> tempFir(right - left + 1);
 	std::vector<int> tempSec(right - left + 1);
 
@@ -102,7 +102,7 @@ void	PmergeMe::merge(std::list<std::pair<size_t, size_t> > & lst, int left, int 
 	}
 }
 
-void PmergeMe::sortBiggest(std::list<std::pair<size_t, size_t> > & pairs, size_t beg, size_t end) {
+void PmergeMe::sortBiggest(std::deque<std::pair<size_t, size_t> > & pairs, size_t beg, size_t end) {
 	int mid;
 	if (beg < end)
 	{
@@ -111,10 +111,6 @@ void PmergeMe::sortBiggest(std::list<std::pair<size_t, size_t> > & pairs, size_t
 		sortBiggest(pairs, mid+1, end);
 		merge(pairs, beg, mid, end);
 	}
-}
-
-size_t returnJacob(size_t last, size_t prevLast) {
-	return (last + (prevLast * 2));
 }
 
 size_t PmergeMe::last_or_jacob() {
@@ -132,138 +128,101 @@ size_t PmergeMe::last_or_jacob() {
 	return _pairs.size();
 }
 
-void PmergeMe::insertShortest() {
-	size_t last = 1;
-	size_t prevLast = 1;
-	size_t tmp = 0;
-	std::list<std::pair<size_t, size_t> >::iterator it = _pairs.begin();
-	std::list<size_t>::iterator itForInsert;
-	std::list<size_t>::iterator itForInsertNext;
-	size_t i = 0;
-	size_t jacob = 0;
-	size_t lastLittlePushed = 0;
-	size_t highLimit = 0;
-	size_t lowLimit = 0;
+void PmergeMe::jacobMem() {
+	size_t n1 = 1;
+	size_t n2 = 1;
 	size_t result = 0;
 
+	result = n1 + (n2 * 2);
+	while (result < _pairs.size()) {
+		_jacob.push_back(result - 1);
+		n2 = n1;
+		n1 = result;
+		result = n1 + (n2 * 2);
+	}
+	_jacob.push_back(_pairs.size() - 1);
+}
 
+void PmergeMe::insertAlgo(size_t numberToInsert) {
+	size_t dicMax = 0;
+	size_t dicMin = 0;
+	size_t result = 0;
+	size_t k = 0;
+
+	dicMax = _liContainer.size() - 1;
+	result = (dicMax - dicMin) / 2;
+	k = result;
+	while (!(numberToInsert < _liContainer[k + 1] && numberToInsert > _liContainer[k])) {
+		if (numberToInsert < _liContainer[k]) {
+			dicMax = k;
+			result -= (dicMax - dicMin) / 2;
+		} else if (numberToInsert > _liContainer[k]) {
+			dicMin = k;
+			result += (dicMax - dicMin) / 2;
+		}
+		k = result;
+		if ((dicMin == 0 && dicMax == 1) || (dicMin == _liContainer.size() - 2 && dicMax == _liContainer.size() - 1)) {
+			break;
+		}
+	}
+	if (dicMin == 0 && dicMax == 1) {
+		if (numberToInsert < _liContainer[0]) {
+			_liContainer.insert(_liContainer.begin(), numberToInsert);
+		} else {
+			_liContainer.insert(_liContainer.begin() + 1, numberToInsert);
+		}
+	} else if ((dicMin == _liContainer.size() - 2 && dicMax == _liContainer.size() - 1)) {
+		_liContainer.insert(_liContainer.end(), numberToInsert);
+	} else {
+		_liContainer.insert(_liContainer.begin() + (k + 1), numberToInsert);
+	}
+}
+
+
+void PmergeMe::insertShortest() {
+	size_t lastLittlePushed = 0;
+	size_t i = 0;
+	size_t j = 0;
+	size_t stopBigShort = 0;
+	size_t nextLimit = 0;
+
+	jacobMem();
 	_liContainer.clear();
-	_liContainer.push_back(it->second);
+	_liContainer.push_back(_pairs[i].second);
 	lastLittlePushed = i;
-	_liContainer.push_back(it->first);
+	_liContainer.push_back(_pairs[i].first);
 	i++;
-	it++;
-	_liContainer.push_back(it->first);
-	// boucle qui insert tout les petits dans les grands
-	while (i <= last_or_jacob()) {
-		// Insert en mixant les grands et les petits
-			//push les petis
-		jacob = returnJacob(last, prevLast) - 1;
-		// 		if (jacob > _pairs.size())
-		// 	jacob = _pairs.size() - 1;
-		// it = _pairs.begin();
-		// std::advance(it, jacob);
-		// std::cout << "i: " << jacob << " " << i << " " << jacob - i << " " << it->second << std::endl;
-		// i = jacob;
-		std::advance(it, jacob - i);
-		std::cout << "i: " << jacob << " " << i  << jacob - i << " " << it->second << std::endl;
-		i = jacob;
-		while (i <= last_or_jacob() && i > lastLittlePushed) {
-			lowLimit = 0;
-			highLimit = _liContainer.size() - 1;
-			result = (highLimit - lowLimit) / 2;
-			itForInsert = _liContainer.begin();
-			std::advance(itForInsert, result);
-			itForInsertNext = itForInsert;
-			itForInsertNext++;
-			while (!(it->second < *itForInsertNext && it->second > *itForInsert)) {
-				if (it->second < *itForInsert) {
-					highLimit = result;
-					result -= ((highLimit - lowLimit) / 2);
-				} else if (it->second > *itForInsert) {
-					lowLimit = result;
-					result += ((highLimit - lowLimit) / 2);
-				}
-				itForInsert = _liContainer.begin();
-				std::advance(itForInsert, result);
-				itForInsertNext = itForInsert;
-				itForInsertNext++;
-				if ((lowLimit == 0 && highLimit == 1) || (lowLimit == _liContainer.size() - 2 && highLimit == _liContainer.size() - 1)) {
-					itForInsertNext = _liContainer.end();
-					break;
-				}
-			}
-			if (lowLimit == 0 && highLimit == 1) {
-				itForInsertNext = _liContainer.begin();
-				if (it->second < *itForInsertNext) {
-					_liContainer.insert(_liContainer.begin(), it->second);
-				} else {
-					_liContainer.insert(itForInsert, it->second);
-				}
-			} else {
-				_liContainer.insert(itForInsertNext, it->second);
-			}
-			it--;
+	_liContainer.push_back(_pairs[i].first);
+	stopBigShort = _jacob.size();
+	j = 0;
+	while (j < stopBigShort) {
+		i = _jacob[j];
+		while (i > lastLittlePushed) {
+			insertAlgo(_pairs[i].second);
 			i--;
 		}
-		lastLittlePushed = jacob;
-		std::advance(it, jacob - i);
-		i = jacob;
-		//push les grands
-		while (i < returnJacob(jacob + 1, last) - 1 && i < _pairs.size() && i < last_or_jacob()) {
-			_liContainer.push_back(it->first);
-			it++;
+		lastLittlePushed = _jacob[j];
+		i = _jacob[j];
+		if (j == stopBigShort - 1)
+			nextLimit = _pairs.size() - 1;
+		else
+			nextLimit = _jacob[j + 1];
+		while (i < nextLimit) {
+			_liContainer.push_back(_pairs[i].first);
 			i++;
-			if (it == _pairs.end()) {
-				if (_isOdd) {
-					// Insertion du dernier element
-					lowLimit = 0;
-					highLimit = _liContainer.size() - 1;
-					result = (highLimit - lowLimit) / 2;
-					itForInsert = _liContainer.begin();
-					std::advance(itForInsert, result);
-					itForInsertNext = itForInsert;
-					itForInsertNext++;
-					while (!(_lastIfOdd < *itForInsertNext && _lastIfOdd > *itForInsert)) {
-						if (_lastIfOdd < *itForInsert) {
-							highLimit = result;
-							result -= ((highLimit - lowLimit) / 2);
-						} else if (_lastIfOdd > *itForInsert) {
-							lowLimit = result;
-							result += ((highLimit - lowLimit) / 2);
-						}
-						itForInsert = _liContainer.begin();
-						std::advance(itForInsert, result);
-						itForInsertNext = itForInsert;
-						itForInsertNext++;
-						if ((lowLimit == 0 && highLimit == 1) || (lowLimit == _liContainer.size() - 2 && highLimit == _liContainer.size() - 1)) {
-							itForInsertNext = _liContainer.end();
-							break;
-						}
-					}
-					if (lowLimit == 0 && highLimit == 1) {
-						itForInsertNext = _liContainer.begin();
-						if (_lastIfOdd < *itForInsertNext) {
-							_liContainer.insert(_liContainer.begin(), _lastIfOdd);
-						} else {
-							_liContainer.insert(itForInsert, _lastIfOdd);
-						}
-					} else {
-						_liContainer.insert(itForInsertNext, _lastIfOdd);
-					}
-				}
-			}
 		}
-		// Preparer prochaine boucle
-		tmp = prevLast;
-		prevLast = last;
-		last = returnJacob(last, tmp);
+		j++;
+	}
+	if (_pairs.size() > 2)
+	_liContainer.push_back(_pairs[_pairs.size() - 1].first);
+	if (_isOdd) {
+		insertAlgo(_lastIfOdd);
 	}
 }
 
 void PmergeMe::makePairs() {
-	std::list<size_t>::iterator it;
-	std::list<size_t>::iterator itNext;
+	std::deque<size_t>::iterator it;
+	std::deque<size_t>::iterator itNext;
 	for (it = _liContainer.begin(); it != _liContainer.end(); it++) {
 		itNext = it;
 		itNext++;
@@ -274,16 +233,12 @@ void PmergeMe::makePairs() {
 				_pairs.push_back(std::make_pair(*itNext, *it++));
 		}
 	}
-	sortBiggest(_pairs, 0, _pairs.size() - 1);
-	// print pairs
-	std::cout << "pairs: ";
-	for (std::list<std::pair<size_t, size_t> >::iterator it = _pairs.begin(); it != _pairs.end(); it++) {
-		std::cout << it->first << " " << it->second << " " << std::endl;
+	if (_liContainer.size() > 3) {
+		sortBiggest(_pairs, 0, _pairs.size() - 1);
+		insertShortest();
 	}
-	std::cout << std::endl;
-	insertShortest();
-		std::cout << "after:" << std::endl;
-	for (std::list<size_t>::iterator it = _liContainer.begin(); it != _liContainer.end(); it++) {
+	std::cout << "after:" << std::endl;
+	for (std::deque<size_t>::iterator it = _liContainer.begin(); it != _liContainer.end(); it++) {
 		std::cout << *it << " ";
 	}
 	std::cout << std::endl;
